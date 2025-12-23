@@ -16,7 +16,7 @@ const AIResumeInterviewer = () => {
   const [selectedBullet, setSelectedBullet] = useState(null);
   const [rewriteSuggestion, setRewriteSuggestion] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(true);}
+  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -38,3 +38,16 @@ const AIResumeInterviewer = () => {
       alert('Please upload a PDF file');
     }
   };
+
+  const analyzeResume = async () => {
+    if (!resumeText || !jobDescription) {
+      alert('Please upload a resume and enter a job description');
+      return;
+    }
+
+    if (!apiKey) {
+      alert('Please enter your Anthropic API key');
+      return;
+    }
+
+    setIsLoading(true);}}
