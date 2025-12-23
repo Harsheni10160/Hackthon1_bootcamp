@@ -17,3 +17,24 @@ const AIResumeInterviewer = () => {
   const [rewriteSuggestion, setRewriteSuggestion] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);}
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setResumeFile(file);
+      
+      // For local version, we'll use a simple text extraction
+      // In production, you'd use a proper PDF parsing library
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        // For demo purposes, prompt user to paste resume text
+        const text = prompt('Please paste your resume text here (PDF parsing requires additional libraries):');
+        if (text) {
+          setResumeText(text);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      alert('Please upload a PDF file');
+    }
+  };
