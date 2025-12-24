@@ -38,7 +38,6 @@ const AIResumeInterviewer = () => {
       alert('Please upload a PDF file');
     }
   };
-
   const analyzeResume = async () => {
     if (!resumeText || !jobDescription) {
       alert('Please upload a resume and enter a job description');
@@ -50,7 +49,7 @@ const AIResumeInterviewer = () => {
       return;
     }
 
-    setIsLoading(true);}}
+    setIsLoading(true);
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -93,24 +92,77 @@ Return a JSON object with this exact structure:
       });
 
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error.message);
       }
 
-      const textContent = data.content.find(item => item.type === 'text')?.text || '';
-      
+      // Accept a few response shapes and extract text safely
+      const textContent =
+        data.completion ||
+        data.choices?.[0]?.message?.content ||
+        data.content?.find(item => item.type === 'text')?.text ||
+        '';
+
       const jsonMatch = textContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const analysis = JSON.parse(jsonMatch[0]);
         setAnalysisData(analysis);
         setStep('analysis');
+      } else {
+        throw new Error('No JSON found in model response');
       }
     } catch (error) {
       console.error('Analysis error:', error);
-      alert('Error analyzing resume: ' + error.message);
+      alert('Error analyzing resume: ' + (error.message || error));
     } finally {
       setIsLoading(false);
     }
   };
+  const generateInterviewQuestions = async () => {
+    setIsLoading(true);
 
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2048,
+          messages: [
+            {
+              role: 'user',
+              content: `You are a professional recruiter. Based on these identified weaknesses and missing skills, generate 5 targeted interview questions that would help the candidate practice and improve in these areas.
+
+Missing Keywords: ${analysisData.missingKeywords.join(', ')}
+Weaknesses: ${analysisData.weaknesses.join(', ')}
+Job Description: ${jobDescription}
+
+Return ONLY a JSON array with no preamble:
+["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]`
+            }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      const textContent = data.content.find(item => item.type === 'text')?.text || '';
+      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+      
+      if (jsonMatch) {
+        const questions = JSON.parse(jsonMatch[0]);
+        setInterviewQuestions(questions);
+        setStep('interview');
+      }
+    } catch (error) {
+      console.error('Question generation error:', error);
+      alert('Error generating questions: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+}
