@@ -165,4 +165,70 @@ Return ONLY a JSON array with no preamble:
       setIsLoading(false);
     }
   };
+    const submitAnswer = async () => {
+    if (!currentAnswer.trim()) {
+      alert('Please provide an answer');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [
+            {
+              role: 'user',
+              content: `You are a professional interview coach. Evaluate this interview answer using the STAR framework (Situation, Task, Action, Result).
+
+Question: ${interviewQuestions[currentQuestion]}
+
+Candidate's Answer:
+${currentAnswer}
+
+Provide constructive feedback focusing on:
+1. Whether they used the STAR framework
+2. Specific improvements they could make
+3. What they did well
+
+Keep feedback concise (3-4 sentences).`
+            }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      const textContent = data.content.find(item => item.type === 'text')?.text || '';
+      
+      const newFeedback = [...feedback, {
+        question: interviewQuestions[currentQuestion],
+        answer: currentAnswer,
+        feedback: textContent
+      }];
+      
+      setFeedback(newFeedback);
+      setUserAnswers([...userAnswers, currentAnswer]);
+      setCurrentAnswer('');
+
+      if (currentQuestion < interviewQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      } else {
+        setStep('complete');
+      }
+    } catch (error) {
+      console.error('Feedback error:', error);
+      alert('Error getting feedback: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 }
